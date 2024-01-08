@@ -35,7 +35,9 @@ for editor in $KNOWN_EDITORS; do
   fi
 done
 
-[[ "$1" == "-v" || "$2" == "-v" ]] && echo "Plugins: ${plugins[@]}"
+[[ "$1" == "-v" || "$2" == "-v" ]] && echo "-----------------------------------------------" 
+[[ "$1" == "-v" || "$2" == "-v" ]] && echo "Plugins: ${plugins[@]}" 
+[[ "$1" == "-v" || "$2" == "-v" ]] && echo "-----------------------------------------------" 
 
 # ~/.git_sync/config (file)
 # ~/.git_sync/list (file)
@@ -87,7 +89,6 @@ fi
 
 # check if repo directory exists, if not, create it
 [ ! -d $DEFAULT_REPO ] && mkdir -p $DEFAULT_REPO
-[ ! -f $DEFAULT_LIST ] && touch $DEFAULT_LIST
 
 # init command, create config file based on user input and exit
 
@@ -172,10 +173,10 @@ then
 
   # TARGET #
 
-  TARGET=$($DIALOG --title "git_sync $ACTION - Target Git Server" --menu "Please choose the target server to which you want to transfer all your repositories into" 15 60 6 $(for plugin in "${plugins[@]}"; do echo "$plugin" "server_api_${plugin}_$(${plugin}_plugin_version)"; done) 3>&1 1>&2 2>&3)
+  TARGET=$($DIALOG --title "git_sync $ACTION - Target Git Server" --menu "Please choose the target server to which you want to transfer all your repositories into" 15 60 6 $(for plugin in "${plugins[@]}"; do echo "$plugin" "server_rest_api_${plugin}_$(${plugin}_plugin_version)"; done) 3>&1 1>&2 2>&3)
   while [[ -z "$TARGET" ]];
   do
-    TARGET=$($DIALOG --title "git_sync $ACTION - Target Git Server" --menu "Please choose the target server to which you want to transfer all your repositories into" 15 60 6 $(for plugin in "${plugins[@]}"; do echo "$plugin" "server_api_${plugin}_$(${plugin}_plugin_version)"; done) 3>&1 1>&2 2>&3)
+    TARGET=$($DIALOG --title "git_sync $ACTION - Target Git Server" --menu "Please choose the target server to which you want to transfer all your repositories into" 15 60 6 $(for plugin in "${plugins[@]}"; do echo "$plugin" "server_rest_api_${plugin}_$(${plugin}_plugin_version)"; done) 3>&1 1>&2 2>&3)
   done
   echo "TARGET=\"${TARGET}\"" >> $DEFAULT_CONFIG
 
@@ -191,10 +192,10 @@ then
 
   # TOKEN #
 
-  TOKEN=$($DIALOG --title "git_sync $ACTION - Access token" --inputbox "Provide access token for your Account.\n\n[Required Permissions]\n- write:organization\n- write:repository\n- write:user" 12 78 $OLD_TOKEN 3>&1 1>&2 2>&3)
+  TOKEN=$($DIALOG --title "git_sync $ACTION - Access token" --inputbox "Provide access token for your Account.\n\n[Required Permissions]\n- write:organization\n- write:repository" 12 78 $OLD_TOKEN 3>&1 1>&2 2>&3)
   while [[ -z "$TOKEN" ]];
   do
-    TOKEN=$($DIALOG --title "git_sync $ACTION - Access token" --inputbox "Provide access token for your Account.\n\n[Required Permissions]\n\n- write:repository\n- write:user" 12 78 $OLD_TOKEN 3>&1 1>&2 2>&3)
+    TOKEN=$($DIALOG --title "git_sync $ACTION - Access token" --inputbox "Provide access token for your Account.\n\n[Required Permissions]\n- write:organization\n- write:repository" 12 78 $OLD_TOKEN 3>&1 1>&2 2>&3)
   done
   echo "TOKEN=\"${TOKEN}\"" >> $DEFAULT_CONFIG
 
@@ -288,7 +289,6 @@ source $ENV 2> /dev/null # load the environment variables from selected config f
 [ ! -z "$SELECTED_DIR" ] && DIR="$SELECTED_DIR"
 
 # create LIST if not exists
-[ ! -f $LIST ] && touch $LIST
 [ ! -d $DIR ] && mkdir -p $DIR
 
 # config command, show loaded variables from config file and exit
@@ -409,7 +409,7 @@ do
   if [ $response -eq 404 ]
   then
     [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Organization [$DOMAIN_NAME] on Gitea Server not found, creating it..."
-    response=$(${TARGET}_create_organization $DOMAIN_NAME)
+    response=$(${TARGET}_create_organization $DOMAIN_NAME $GIT_USER)
     [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Response: $response"
     [ $response -ne 201 ] && echo "[ERROR] Creating organization [$DOMAIN_NAME] on Gitea Server failed!" && exit 1
   else

@@ -2,7 +2,21 @@
 
 ## Overview
 
-This script automates the process of syncing repositories from one Git server to another. It's designed to be flexible and supports multiple Git servers storage taget through plugins.
+This script automates the process of syncing repositories from one Git server to another. It's designed to be flexible and supports multiple Git servers storage target through plugins.
+
+When to sync `git@github.com:vzool/git_sync.git` for instance, `git_sync` will create a new repository name `git_sync` under a new orgnization name `vzool.github.com`.
+
+So, things will be separated automatically by namespaces. :)
+
+#### Support Plugins
+
+- [x] [Gitea](https://about.gitea.com/).
+- [ ] [Gogs](https://gogs.io/). [WIP]
+- [ ] [OneDev](https://onedev.io/).
+- [ ] [Github](https://github.com/).
+- [ ] [BitBucket](https://bitbucket.org/).
+- [ ] [GitLab](https://about.gitlab.com/).
+
 
 ## Key Features
 
@@ -22,6 +36,9 @@ This script automates the process of syncing repositories from one Git server to
 - SSH key pair already set for the Gitea server.
 - SSH key pair already set for all source Git servers.
 - `git` command line tool.
+- Accesss Token with the following permissions:
+    - write:organization
+    - write:repository
 
 ## Usage
 
