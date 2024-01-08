@@ -3,6 +3,7 @@
 # Author: Abdelaziz Elrashed (@vzool)
 # Version: 0.0.1-dev
 # Date: 2024-01-08
+# URL: https://github.com/vzool/git_sync
 # License: MIT
 
 # Check dependencies by loop through all required commands and check if they are installed
@@ -23,6 +24,15 @@ for plugin in *_plugin.sh; do
   name=$(echo $plugin | sed 's/_plugin.sh//')
   [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Loaded ($name) plugin $(${name}_plugin_version)!"
   plugins+=($name)
+done
+
+KNOWN_EDITORS="nano vim emacs vi pico code"
+AVAILABLE_EDITORS=()
+for editor in $KNOWN_EDITORS; do
+  if command -v $editor &> /dev/null
+  then
+    AVAILABLE_EDITORS+=($editor)
+  fi
 done
 
 [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Plugins: ${plugins[@]}"
@@ -55,9 +65,11 @@ then
   echo "  -v              show verbose output"
   echo "  -h, help        display this help and exit"
   echo "  version         output version information and exit"
-  echo "  config          show loaded variables from config file and exit"
-  echo "  init            create config file based on user input and exit"
-  echo "  size            show size of repositories locally and exit"
+  echo "  env             show loaded variables from config file and exit"
+  echo "  config          edit config file"
+  echo "  init            initialize the application based on user input"
+  echo "  size            show size of repositories locally"
+  echo "  list            edit the list of repositories to sync"
   exit 0
 fi
 
@@ -82,7 +94,7 @@ fi
 if [ "$1" == "init" ]
 then
 
-  ACTION="Installer"
+  ACTION="Initializer"
 
   # if file exists, load all variables from it
   [ -f $DEFAULT_CONFIG ] && source $DEFAULT_CONFIG 2> /dev/null # load the environment variables from config file
@@ -155,7 +167,7 @@ then
 
   echo "####################################################################" > $DEFAULT_CONFIG
   echo "# git_sync configuration file" >> $DEFAULT_CONFIG
-  echo "# Created by ($USER) @ $(date)" >> $DEFAULT_CONFIG
+  echo "# Created by ($USER) @ [$(date)]" >> $DEFAULT_CONFIG
   echo "####################################################################" >> $DEFAULT_CONFIG
 
   # TARGET #
@@ -166,6 +178,16 @@ then
     TARGET=$($DIALOG --title "git_sync $ACTION - Target Git Server" --menu "Please choose the target server to which you want to transfer all your repositories into" 15 60 6 $(for plugin in "${plugins[@]}"; do echo "$plugin" "server_api_${plugin}_$(${plugin}_plugin_version)"; done) 3>&1 1>&2 2>&3)
   done
   echo "TARGET=\"${TARGET}\"" >> $DEFAULT_CONFIG
+
+  # EDITOR #
+
+  EDITOR=$($DIALOG --title "git_sync $ACTION - Editor" --menu "Which editor would you prefer to use from the available options on your system?" 15 60 6 $(for editor in "${AVAILABLE_EDITORS[@]}"; do echo "$editor" "$editor"; done) 3>&1 1>&2 2>&3)
+  while [[ -z "$EDITOR" ]];
+  do
+    EDITOR=$($DIALOG --title "git_sync $ACTION - Editor" --menu "Which editor would you prefer to use from the available options on your system?" 15 60 6 $(for editor in "${AVAILABLE_EDITORS[@]}"; do echo "$editor" "$editor"; done) 3>&1 1>&2 2>&3)
+  done
+  echo "EDITOR=\"${EDITOR}\"" >> $DEFAULT_CONFIG
+
 
   # TOKEN #
 
@@ -246,6 +268,7 @@ source $ENV 2> /dev/null # load the environment variables from selected config f
 # if optional variables not passed, set to default values
 [ -z "$ENV" ] && ENV="$DEFAULT_CONFIG" && source $ENV 2> /dev/null # set the environment
 [ -z "$TARGET" ] && TARGET="gitea" # set the target server
+[ -z "$EDITOR" ] && EDITOR="nano" # set the editor
 [ -z "$TOKEN" ] && echo "[ERROR] TOKEN not found, add it to config file!" && exit 1 # set the list of repositories to sync
 [ -z "$GIT_USER" ] && echo "[ERROR] GIT_USER not found, add it to config file!" && exit 1 # set the list of repositories to sync
 [ -z "$HTTP_HOST" ] && echo "[ERROR] HTTP_HOST not found, add it to config file!" && exit 1 # set the list of repositories to sync
@@ -270,21 +293,23 @@ source $ENV 2> /dev/null # load the environment variables from selected config f
 
 # config command, show loaded variables from config file and exit
 
-if [ "$1" == "config" ]
+if [ "$1" == "env" ]
 then
   # Show loaded variables from config file
-  echo "==============================================="
-  echo "================ LOADED CONFIG ================"
-  echo "==============================================="
+  echo "===================================================="
+  echo "================ LOADED ENVIRONMENT ================"
+  echo "===================================================="
   echo "ENV: $ENV"
   echo "TARGET: $TARGET"
+  echo "EDITOR: $EDITOR"
+  echo "TOKEN: $TOKEN"
   echo "GIT_USER: $GIT_USER"
   echo "HTTP_HOST: $HTTP_HOST"
   echo "SSH_HOST: $SSH_HOST"
   echo "SSH_PORT: $SSH_PORT"
   echo "LIST: $LIST"
   echo "DIR: $DIR"
-  echo "==============================================="
+  echo "===================================================="
   exit 0
 fi
 
@@ -293,6 +318,29 @@ if [ "$1" == "size" ]
 then
   du -sh $DIR
   du -sh $DIR/*
+  exit 0
+fi
+
+if [[ "$1" == "list" || "$1" == "config" ]]
+then
+  if [ ${#AVAILABLE_EDITORS[@]} -eq 0 ]
+  then
+    echo "[ERROR] No editor found, please install one of the following editors: $KNOWN_EDITORS"
+    exit 1
+  fi
+fi
+
+# edit the list of repositories to sync
+if [ "$1" == "list" ]
+then
+  $EDITOR $LIST
+  exit 0
+fi
+
+# edit config file
+if [ "$1" == "config" ]
+then
+  $EDITOR $ENV
   exit 0
 fi
 

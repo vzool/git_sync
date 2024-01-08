@@ -12,6 +12,7 @@ This script automates the process of syncing repositories from one Git server to
 - User-friendly: Offers interactive prompts and confirmations.
 - Provides additional commands:
     - git_sync init: Create config file based on user input and exit.
+    - git_sync list: Edit the list of repositories to sync.
     - git_sync config: Displays loaded configuration variables.
     - git_sync size: Shows the size of locally stored repositories.
     - git_sync version: Output version information and exit.
