@@ -1,0 +1,393 @@
+#!/usr/bin/env bash
+# git_sync - Sync many repositories from any Git Server to another Git Server
+# Author: Abdelaziz Elrashed (@vzool)
+# Version: 0.0.1-dev
+# Date: 2024-01-08
+# License: MIT
+
+# Check dependencies by loop through all required commands and check if they are installed
+
+for cmd in curl git sed
+do
+  if ! command -v $cmd &> /dev/null
+  then
+    echo "[ERROR] `$cmd` command could not be found, please install it!"
+    exit 1
+  fi
+done
+
+plugins=()
+for plugin in *_plugin.sh; do
+  [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Loading $plugin..."
+  . "$plugin" #|| echo "[ERROR] Failed to load $plugin!" && continue
+  name=$(echo $plugin | sed 's/_plugin.sh//')
+  [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Loaded ($name) plugin $(${name}_plugin_version)!"
+  plugins+=($name)
+done
+
+[[ "$1" == "-v" || "$2" == "-v" ]] && echo "Plugins: ${plugins[@]}"
+
+# ~/.git_sync/config (file)
+# ~/.git_sync/list (file)
+# ~/.git_sync/repo (directory)
+
+DEFAULT_LOCATION="$HOME/.git_sync" # default location for all files
+DEFAULT_CONFIG="$DEFAULT_LOCATION/config" # default config file path
+DEFAULT_LIST="$DEFAULT_LOCATION/list" # default repositories list file path
+DEFAULT_REPO="$DEFAULT_LOCATION/repo" # default repositories directory path
+
+if command -v dialog >/dev/null 2>&1; then
+    # dialog is available (likely not macOS)
+    DIALOG="dialog"
+elif command -v whiptail &> /dev/null; then
+    # whiptail is likely available (fallback for macOS)
+    DIALOG="whiptail"
+else
+    echo "[ERROR] Neither dialog nor whiptail found. Please install one of them."
+    exit 1
+fi
+
+if [[ "$1" == "-h" || "$1" == "-help" || "$1" == "help" ]]
+then
+  echo "git_sync - Sync many repositories from any Git Server to another Git Server"
+  echo "Usage: git_sync [OPTION]"
+  echo "  -y              do not ask for confirmation"
+  echo "  -v              show verbose output"
+  echo "  -h, help        display this help and exit"
+  echo "  version         output version information and exit"
+  echo "  config          show loaded variables from config file and exit"
+  echo "  init            create config file based on user input and exit"
+  echo "  size            show size of repositories locally and exit"
+  exit 0
+fi
+
+if [ "$1" == "version" ]
+then
+  echo "============================================================================="
+  echo "git_sync version 0.0.1-dev"
+  echo "-----------------------------------------------------------------------------"
+  echo "Created by: Abdelaziz Elrashed (c) 2024"
+  echo "============================================================================="
+  echo "<3 Free Free Palestine, From the River to the Sea, Palestine Will be Free <3"
+  echo "============================================================================="
+  exit 0
+fi
+
+# check if repo directory exists, if not, create it
+[ ! -d $DEFAULT_REPO ] && mkdir -p $DEFAULT_REPO
+[ ! -f $DEFAULT_LIST ] && touch $DEFAULT_LIST
+
+# init command, create config file based on user input and exit
+
+if [ "$1" == "init" ]
+then
+
+  ACTION="Installer"
+
+  # if file exists, load all variables from it
+  [ -f $DEFAULT_CONFIG ] && source $DEFAULT_CONFIG 2> /dev/null # load the environment variables from config file
+  OLD_TOKEN="$TOKEN"
+  OLD_GIT_USER="$USER"
+  OLD_HTTP_HOST="http://192.168.88.248:3000"
+  OLD_SSH_HOST="git@192.168.88.248"
+  OLD_SSH_PORT="22"
+  OLD_LIST="$DEFAULT_LIST"
+  OLD_DIR="$DEFAULT_REPO"
+
+  # check if config file already exists, if yes, load all variables from it
+  if [ -f $DEFAULT_CONFIG ]
+  then
+    ACTION="Updater"
+    if [ -z "$GIT_USER" ] 
+    then
+      echo "[ERROR] GIT_USER not found, add it to config file!"
+      OLD_GIT_USER="$USER"
+    else
+      [[ "$1" == "-v" || "$2" == "-v" ]] && echo "[INFO] GIT_USER found, skipping it!"
+      OLD_GIT_USER="$GIT_USER"
+    fi
+    if [ -z "$HTTP_HOST" ]
+    then
+      echo "[ERROR] HTTP_HOST not found, add it to config file!"
+      OLD_HTTP_HOST="http://192.168.88.248:3000"
+    else
+      [[ "$1" == "-v" || "$2" == "-v" ]] && echo "[INFO] HTTP_HOST found, skipping it!"
+      OLD_HTTP_HOST="$HTTP_HOST"
+    fi
+    if [ -z "$SSH_HOST" ]
+    then
+      echo "[ERROR] SSH_HOST not found, add it to config file!"
+      OLD_SSH_HOST="git@192.168.88.248"
+    else
+      [[ "$1" == "-v" || "$2" == "-v" ]] && echo "[INFO] SSH_HOST found, skipping it!"
+      OLD_SSH_HOST="$SSH_HOST"
+    fi
+    if [ -z "$SSH_PORT" ]
+    then
+      echo "[ERROR] SSH_PORT not found, add it to config file!"
+      OLD_SSH_PORT="22"
+    else
+      [[ "$1" == "-v" || "$2" == "-v" ]] && echo "[INFO] SSH_PORT found, skipping it!"
+      OLD_SSH_PORT="$SSH_PORT"
+    fi
+    if [ -z "$LIST" ]
+    then
+      echo "[ERROR] LIST not found, add it to config file!"
+      OLD_LIST="$DEFAULT_LIST"
+    else
+      [[ "$1" == "-v" || "$2" == "-v" ]] && echo "[INFO] LIST found, skipping it!"
+      OLD_LIST="$LIST"
+    fi
+    if [ -z "$DIR" ] 
+    then
+      echo "[ERROR] DIR not found, add it to config file!"
+      OLD_DIR="$DEFAULT_REPO"
+    else
+      [[ "$1" == "-v" || "$2" == "-v" ]] && echo "[INFO] DIR found, skipping it!"
+      OLD_DIR="$DIR"
+    fi
+  fi
+
+  if (! $DIALOG --title "git_sync $ACTION" --yesno "git_sync $ACTION will remove your current $DEFAULT_CONFIG file and create a new one based on your provided answers.\n\nDo you want to process with the $ACTION?" 12 78);
+  then
+    exit
+  fi
+
+  echo "####################################################################" > $DEFAULT_CONFIG
+  echo "# git_sync configuration file" >> $DEFAULT_CONFIG
+  echo "# Created by ($USER) @ $(date)" >> $DEFAULT_CONFIG
+  echo "####################################################################" >> $DEFAULT_CONFIG
+
+  # TARGET #
+
+  TARGET=$($DIALOG --title "git_sync $ACTION - Target Git Server" --menu "Please choose the target server to which you want to transfer all your repositories into" 15 60 6 $(for plugin in "${plugins[@]}"; do echo "$plugin" "server_api_${plugin}_$(${plugin}_plugin_version)"; done) 3>&1 1>&2 2>&3)
+  while [[ -z "$TARGET" ]];
+  do
+    TARGET=$($DIALOG --title "git_sync $ACTION - Target Git Server" --menu "Please choose the target server to which you want to transfer all your repositories into" 15 60 6 $(for plugin in "${plugins[@]}"; do echo "$plugin" "server_api_${plugin}_$(${plugin}_plugin_version)"; done) 3>&1 1>&2 2>&3)
+  done
+  echo "TARGET=\"${TARGET}\"" >> $DEFAULT_CONFIG
+
+  # TOKEN #
+
+  TOKEN=$($DIALOG --title "git_sync $ACTION - Access token" --inputbox "Provide access token for your Account.\n\n[Required Permissions]\n- write:organization\n- write:repository\n- write:user" 12 78 $OLD_TOKEN 3>&1 1>&2 2>&3)
+  while [[ -z "$TOKEN" ]];
+  do
+    TOKEN=$($DIALOG --title "git_sync $ACTION - Access token" --inputbox "Provide access token for your Account.\n\n[Required Permissions]\n\n- write:repository\n- write:user" 12 78 $OLD_TOKEN 3>&1 1>&2 2>&3)
+  done
+  echo "TOKEN=\"${TOKEN}\"" >> $DEFAULT_CONFIG
+
+  # GIT_USER #
+
+  GIT_USER=$($DIALOG --title "git_sync $ACTION - Git Username" --inputbox "Provide your username on Gitea Server." 12 78 $OLD_GIT_USER 3>&1 1>&2 2>&3)
+  while [[ -z "$GIT_USER" ]];
+  do
+    GIT_USER=$($DIALOG --title "git_sync $ACTION - Git Username" --inputbox "Provide your username on Gitea Server." 12 78 $OLD_GIT_USER 3>&1 1>&2 2>&3)
+  done
+  echo "GIT_USER=\"${GIT_USER}\"" >> $DEFAULT_CONFIG
+
+  # HTTP_HOST #
+  
+  HTTP_HOST=$($DIALOG --title "git_sync $ACTION - Gitea HTTP HOST" --inputbox "Provide IP or host for your Gitea HTTP Server." 12 78 $OLD_HTTP_HOST 3>&1 1>&2 2>&3)
+  while [[ -z "$HTTP_HOST" ]];
+  do
+    HTTP_HOST=$($DIALOG --title "git_sync $ACTION - Gitea HTTP HOST" --inputbox "Provide IP or host for your Gitea HTTP Server." 12 78 $OLD_HTTP_HOST 3>&1 1>&2 2>&3)
+  done
+  echo "HTTP_HOST=\"${HTTP_HOST}\"" >> $DEFAULT_CONFIG
+
+  # SSH_HOST #
+
+  SSH_HOST=$($DIALOG --title "git_sync $ACTION - Gitea SSH HOST" --inputbox "Provide IP or host for your Gitea SSH Server." 12 78 $OLD_SSH_HOST 3>&1 1>&2 2>&3)
+  while [[ -z "$SSH_HOST" ]];
+  do
+    SSH_HOST=$($DIALOG --title "git_sync $ACTION - Gitea SSH HOST" --inputbox "Provide IP or host for your Gitea SSH Server." 12 78 $OLD_SSH_HOST 3>&1 1>&2 2>&3)
+  done
+  echo "SSH_HOST=\"${SSH_HOST}\"" >> $DEFAULT_CONFIG
+
+  # SSH_PORT #
+
+  SSH_PORT=$($DIALOG --title "git_sync $ACTION - Gitea SSH PORT" --inputbox "Provide Port for your Gitea SSH Server." 12 78 $OLD_SSH_PORT 3>&1 1>&2 2>&3)
+  while [[ !( "$SSH_PORT" =~ ^[-]?[0-9]+ && "$SSH_PORT" -ge 0 && "$SSH_PORT" -le 65535 ) ]];
+  do
+    SSH_PORT=$($DIALOG --title "git_sync $ACTION - Gitea SSH PORT" --inputbox "Provide Port for your Gitea SSH Server." 12 78 $OLD_SSH_PORT 3>&1 1>&2 2>&3)
+  done
+  echo "SSH_PORT=\"${SSH_PORT}\"" >> $DEFAULT_CONFIG
+
+  # LIST #
+
+  LIST=$($DIALOG --title "git_sync $ACTION - Repositories List File" --inputbox "Provide file list for your repositories.\n\ncreate it and add the repositories to sync in one per line in SSH \`git@xxxxxx:user/xxxxxx.git\` format!" 12 78 $OLD_LIST 3>&1 1>&2 2>&3)
+  while [[ -z "$LIST" ]];
+  do
+    LIST=$($DIALOG --title "git_sync $ACTION - Repositories List File" --inputbox "Provide file list for your repositories.\n\ncreate it and add the repositories to sync in one per line in SSH \`git@xxxxxx:user/xxxxxx.git\` format!" 12 78 $OLD_LIST 3>&1 1>&2 2>&3)
+  done
+  echo "LIST=\"${LIST}\"" >> $DEFAULT_CONFIG
+
+  # DIR #
+
+  DIR=$($DIALOG --title "git_sync $ACTION - Local Repositories Directory" --inputbox "Provide a local directory for your repositories.\n\nThis directory will be stage for all your repository to sync locally then push/sync to Gitea Server." 12 78 $OLD_DIR 3>&1 1>&2 2>&3)
+  while [[ -z "$DIR" ]];
+  do
+    DIR=$($DIALOG --title "git_sync $ACTION - Local Repositories Directory" --inputbox "Provide a local directory for your repositories.\n\nThis directory will be stage for all your repository to sync locally then push/sync to Gitea Server." 12 78 $OLD_DIR 3>&1 1>&2 2>&3)
+  done
+  echo "DIR=\"${DIR}\"" >> $DEFAULT_CONFIG
+
+  exit 0
+fi
+
+SELECTED_TOKEN="$TOKEN"
+SELECTED_GIT_USER="$GIT_USER"
+SELECTED_HTTP_HOST="$HTTP_HOST"
+SELECTED_SSH_HOST="$SSH_HOST"
+SELECTED_SSH_PORT="$SSH_PORT"
+SELECTED_LIST="$LIST"
+SELECTED_DIR="$DIR"
+
+source $ENV 2> /dev/null # load the environment variables from selected config file
+
+# if optional variables not passed, set to default values
+[ -z "$ENV" ] && ENV="$DEFAULT_CONFIG" && source $ENV 2> /dev/null # set the environment
+[ -z "$TARGET" ] && TARGET="gitea" # set the target server
+[ -z "$TOKEN" ] && echo "[ERROR] TOKEN not found, add it to config file!" && exit 1 # set the list of repositories to sync
+[ -z "$GIT_USER" ] && echo "[ERROR] GIT_USER not found, add it to config file!" && exit 1 # set the list of repositories to sync
+[ -z "$HTTP_HOST" ] && echo "[ERROR] HTTP_HOST not found, add it to config file!" && exit 1 # set the list of repositories to sync
+[ -z "$SSH_HOST" ] && echo "[ERROR] SSH_HOST not found, add it to config file!" && exit 1 # set the list of repositories to sync
+[ -z "$SSH_PORT" ] && SSH_PORT="22" # set the ssh port
+[ -z "$LIST" ] && LIST="$DEFAULT_LIST" # set the list of repositories to sync
+[ -z "$DIR" ] && DIR="$DEFAULT_REPO" # set the directory to store repositories locally
+
+# check if SELECTED_LIST is not empty, then forced to use it
+
+[ ! -z "$SELECTED_TOKEN" ] && TOKEN="$SELECTED_TOKEN"
+[ ! -z "$SELECTED_GIT_USER" ] && GIT_USER="$SELECTED_GIT_USER"
+[ ! -z "$SELECTED_HTTP_HOST" ] && HTTP_HOST="$SELECTED_HTTP_HOST"
+[ ! -z "$SELECTED_SSH_HOST" ] && SSH_HOST="$SELECTED_SSH_HOST"
+[ ! -z "$SELECTED_SSH_PORT" ] && SSH_PORT="$SELECTED_SSH_PORT"
+[ ! -z "$SELECTED_LIST" ] && LIST="$SELECTED_LIST"
+[ ! -z "$SELECTED_DIR" ] && DIR="$SELECTED_DIR"
+
+# create LIST if not exists
+[ ! -f $LIST ] && touch $LIST
+[ ! -d $DIR ] && mkdir -p $DIR
+
+# config command, show loaded variables from config file and exit
+
+if [ "$1" == "config" ]
+then
+  # Show loaded variables from config file
+  echo "==============================================="
+  echo "================ LOADED CONFIG ================"
+  echo "==============================================="
+  echo "ENV: $ENV"
+  echo "TARGET: $TARGET"
+  echo "GIT_USER: $GIT_USER"
+  echo "HTTP_HOST: $HTTP_HOST"
+  echo "SSH_HOST: $SSH_HOST"
+  echo "SSH_PORT: $SSH_PORT"
+  echo "LIST: $LIST"
+  echo "DIR: $DIR"
+  echo "==============================================="
+  exit 0
+fi
+
+# show size of repositories locally and exit
+if [ "$1" == "size" ]
+then
+  du -sh $DIR
+  du -sh $DIR/*
+  exit 0
+fi
+
+# if list list file not found in provided path, exit
+[ ! -f $LIST ] && echo "[ERROR] File [$LIST] not found, create it and add the repositories to sync in one per line in SSH \`git@xxxxxx:user/xxxxxx.git\` format!" && exit 1
+
+# let the user know what is going to happen
+
+echo "This script will clone all repositories listed in list into [$DIR] locally and push/sync them to [$SSH_HOST]."
+
+# check if confirmed flag is set, if not, ask for confirmation
+if [ "$1" != "-y" ]
+then
+    echo "Press any key to continue or CTRL+C to abort..."
+    read -n 1 -s
+fi
+
+# if directory does not exist, create it
+[ ! -d $DIR ] && mkdir -p $DIR
+
+# check if List file is empty
+if [ ! -s $LIST ]
+then
+    echo "[ERROR] File [$LIST] is empty, add the repositories to in you want to push/sync to Gitea Server in SSH \`git@xxxxxx:user/xxxxxx.git\` format!"
+    exit 1
+fi
+
+cd $DIR
+
+for repo in `cat $LIST`
+do
+
+  # extract domain name with handle from repo url
+  DOMAIN_NAME=$(echo $repo | sed 's/.*@\(.*\):.*/\1/')
+  GIT_HANDLE=$(echo $repo | sed 's/.*:\(.*\)\/.*/\1/')
+  DOMAIN_NAME="$GIT_HANDLE.$DOMAIN_NAME"
+  [[ "$1" == "-v" || "$2" == "-v" ]] && echo "DOMAIN_NAME: $DOMAIN_NAME"
+
+  mkdir -p $DOMAIN_NAME
+  cd $DOMAIN_NAME
+
+  REPOSITORY_NAME=`basename "$repo" | sed 's/\.git$//'`
+  if [ -d "$REPOSITORY_NAME.git" ]
+  then
+
+    [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Sync [$REPOSITORY_NAME]..."
+    cd "$REPOSITORY_NAME.git"
+    git fetch --all
+    git fetch --tags
+    cd ..
+
+  else
+
+    [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Cloning [$REPOSITORY_NAME]..."
+    git clone --mirror --bare $repo
+    
+  fi
+
+  # server api to check if organization exists
+
+  response=$(${TARGET}_check_organization $DOMAIN_NAME)
+  [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Response: $response"
+
+  # if organization not found, create it
+
+  if [ $response -eq 404 ]
+  then
+    [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Organization [$DOMAIN_NAME] on Gitea Server not found, creating it..."
+    response=$(${TARGET}_create_organization $DOMAIN_NAME)
+    [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Response: $response"
+    [ $response -ne 201 ] && echo "[ERROR] Creating organization [$DOMAIN_NAME] on Gitea Server failed!" && exit 1
+  else
+    [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Organization [$DOMAIN_NAME] on Gitea Server found, skipping it!"
+  fi
+  
+  # server api to check if repository exists in organization
+
+  response=$(${TARGET}_check_repository $DOMAIN_NAME $REPOSITORY_NAME)
+  [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Response: $response"
+
+  if [ $response -eq 404 ]
+  then
+    [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Repository [$REPOSITORY_NAME] on Gitea Server not found, creating it..."
+    
+    response=$(${TARGET}_organization_create_repository $DOMAIN_NAME $REPOSITORY_NAME)
+    [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Response: $response"
+    [ $response -ne 201 ] && echo "[ERROR] Creating repository [$REPOSITORY_NAME] on Gitea Server failed!" && exit 1
+
+  else
+    [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Repository [$REPOSITORY_NAME] on Gitea Server found, skipping it!"
+  fi
+  cd $REPOSITORY_NAME.git
+  export GIT_SSH_COMMAND="ssh -oPort=$SSH_PORT" # set the selected ssh port
+  git push --all $SSH_HOST:$DOMAIN_NAME/$REPOSITORY_NAME.git
+  git push --tags $SSH_HOST:$DOMAIN_NAME/$REPOSITORY_NAME.git
+  export GIT_SSH_COMMAND="ssh -oPort=22" # to reset the ssh default port
+  cd ../..
+done

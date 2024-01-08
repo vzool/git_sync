@@ -1,0 +1,3 @@
+git@bitbucket.org:vzool/example1.git
+git@github.com:vzool/example2.git
+git@gitlab.com:vzool/example3.git
