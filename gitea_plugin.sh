@@ -5,7 +5,7 @@
 # Date: 2024-01-08
 # License: MIT
 ################################################
-function gitea_plugin_version(){ echo "0.1"; }
+function gitea_plugin_version(){ echo "vzool_0.1"; }
 function gitea_check_organization(){
   local domain="$1"
   echo $(curl --write-out '%{http_code}' --silent --output /dev/null -X GET \
