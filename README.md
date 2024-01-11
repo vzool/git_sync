@@ -11,7 +11,7 @@ So, things will be separated automatically by namespaces. :)
 #### Support Plugins
 
 - [x] [Gitea](https://about.gitea.com/).
-- [ ] [Gogs](https://gogs.io/).
+- [x] [Gogs](https://gogs.io/).
 - [ ] [OneDev](https://onedev.io/).
 - [ ] [Github](https://github.com/).
 - [ ] [BitBucket](https://bitbucket.org/).
