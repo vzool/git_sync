@@ -35,9 +35,9 @@ for editor in $KNOWN_EDITORS; do
   fi
 done
 
-[[ "$1" == "-v" || "$2" == "-v" ]] && echo "-----------------------------------------------" 
-[[ "$1" == "-v" || "$2" == "-v" ]] && echo "Plugins: ${plugins[@]}" 
-[[ "$1" == "-v" || "$2" == "-v" ]] && echo "-----------------------------------------------" 
+[[ "$1" == "-v" || "$2" == "-v" ]] && echo "-----------------------------------------------"
+[[ "$1" == "-v" || "$2" == "-v" ]] && echo "Plugins: ${plugins[@]}"
+[[ "$1" == "-v" || "$2" == "-v" ]] && echo "-----------------------------------------------"
 
 # ~/.git_sync/config (file)
 # ~/.git_sync/list (file)
@@ -409,7 +409,7 @@ do
   if [ $response -eq 404 ]
   then
     [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Organization [$DOMAIN_NAME] on Gitea Server not found, creating it..."
-    response=$(${TARGET}_create_organization $DOMAIN_NAME $GIT_USER)
+    response=$(${TARGET}_create_organization $DOMAIN_NAME)
     [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Response: $response"
     [ $response -ne 201 ] && echo "[ERROR] Creating organization [$DOMAIN_NAME] on Gitea Server failed!" && exit 1
   else
