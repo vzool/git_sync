@@ -35,9 +35,14 @@ for editor in $KNOWN_EDITORS; do
   fi
 done
 
-[[ "$1" == "-v" || "$2" == "-v" ]] && echo "-----------------------------------------------"
-[[ "$1" == "-v" || "$2" == "-v" ]] && echo "Plugins: ${plugins[@]}"
-[[ "$1" == "-v" || "$2" == "-v" ]] && echo "-----------------------------------------------"
+[[ "$1" == "-v" || "$2" == "-v" || "$1" == "plugins" ]] && echo "-----------------------------------------------"
+[[ "$1" == "-v" || "$2" == "-v" || "$1" == "plugins" ]] && echo "Plugins: ${plugins[@]}"
+[[ "$1" == "-v" || "$2" == "-v" || "$1" == "plugins" ]] && echo "-----------------------------------------------"
+
+if [ "$1" == "plugins" ]
+then
+  exit 0
+fi
 
 # ~/.git_sync/config (file)
 # ~/.git_sync/list (file)
@@ -72,6 +77,7 @@ then
   echo "  init            initialize the application based on user input"
   echo "  size            show size of repositories locally"
   echo "  list            edit the list of repositories to sync"
+  echo "  plugins         list all available plugins"
   exit 0
 fi
 
@@ -316,8 +322,11 @@ fi
 # show size of repositories locally and exit
 if [ "$1" == "size" ]
 then
+  echo "===================================================="
   du -sh $DIR
+  echo "----------------------------------------------------"
   du -sh $DIR/*
+  echo "===================================================="
   exit 0
 fi
 
@@ -370,8 +379,15 @@ fi
 
 cd $DIR
 
+index=0
+count=$(wc -l < $LIST)
+
 for repo in `cat $LIST`
 do
+
+  index=$((index+1))
+
+  echo "[$index/$count] $repo"
 
   # extract domain name with handle from repo url
   DOMAIN_NAME=$(echo $repo | sed 's/.*@\(.*\):.*/\1/')
