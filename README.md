@@ -17,7 +17,21 @@ So, things will be separated automatically by namespaces. :)
 - [ ] [BitBucket](https://bitbucket.org/).
 - [ ] [GitLab](https://about.gitlab.com/).
 
+## Installation / Update
 
+```bash
+curl -s https://raw.githubusercontent.com/vzool/git_sync/main/install.sh | bash -s --
+```
+
+## Uninstall
+
+```bash
+git_sync uninstall
+
+# OR
+
+curl -s https://raw.githubusercontent.com/vzool/git_sync/main/uninstall.sh | bash -s -- remove
+```
 ## Key Features
 
 - Syncs repositories across Git servers: Clones repositories locally and pushes them to a target Git server, utilizing Git server APIs for organization and repository management.

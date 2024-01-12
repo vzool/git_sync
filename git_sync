@@ -78,6 +78,8 @@ then
   echo "  size            show size of repositories locally"
   echo "  list            edit the list of repositories to sync"
   echo "  plugins         list all available plugins"
+  echo "  install         install/update the application"
+  echo "  uninstall       uninstall the application"
   exit 0
 fi
 
@@ -90,6 +92,20 @@ then
   echo "============================================================================="
   echo "<3 Free Free Palestine, From the River to the Sea, Palestine Will be Free <3"
   echo "============================================================================="
+  exit 0
+fi
+
+# install command, create default files and exit
+if [ "$1" == "install" ]
+then
+  ./install.sh
+  exit 0
+fi
+
+# uninstall command, remove default files and exit
+if [ "$1" == "uninstall" ]
+then
+  ./install.sh remove
   exit 0
 fi
 
