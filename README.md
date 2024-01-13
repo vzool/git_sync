@@ -1,4 +1,4 @@
-# git_sync: Easily sync repositories between Git servers
+# [WIP] git_sync: Easily sync repositories between Git servers
 
 ## Overview
 
@@ -32,6 +32,28 @@ git_sync uninstall
 
 curl -s https://raw.githubusercontent.com/vzool/git_sync/main/uninstall.sh | bash -s -- remove
 ```
+
+## Usage
+
+```bash
+# 1) Create .git_sync directory at home directory
+git_sync init 
+# 2) Edit the list to add, update or remove of repositories to sync
+git_sync list
+# 3) Show loaded env
+git_sync env
+# 4) Run without confirmation
+git_sync -y
+```
+
+- Ensure dependencies: Verify that required commands like git and curl are installed.
+- Set up configuration:
+    - If a configuration file doesn't exist, run git_sync init to create one interactively.
+    - You can also manually edit the configuration file.
+- Run the script:
+    - Use the -v flag for verbose output.
+    - Use the -y flag to skip confirmation prompts.
+
 ## Key Features
 
 - Syncs repositories across Git servers: Clones repositories locally and pushes them to a target Git server, utilizing Git server APIs for organization and repository management.
@@ -39,10 +61,14 @@ curl -s https://raw.githubusercontent.com/vzool/git_sync/main/uninstall.sh | bas
 - Configurable: Employs a configuration file for settings and preferences.
 - User-friendly: Offers interactive prompts and confirmations.
 - Provides additional commands:
-    - git_sync init: Create config file based on user input and exit.
+    - git_sync init: Create/Edit config file based on user input using interactive prompts.
     - git_sync list: Edit the list of repositories to sync.
-    - git_sync config: Displays loaded configuration variables.
+    - git_sync config: Edit configuration variables.
+    - git_sync env: Show loaded env.
     - git_sync size: Shows the size of locally stored repositories.
+    - git_sync plugins: List available plugins.
+    - git_sync install: Install git_sync.
+    - git_sync uninstall: Uninstall git_sync.
     - git_sync version: Output version information and exit.
 
 ## Requirements
@@ -53,16 +79,6 @@ curl -s https://raw.githubusercontent.com/vzool/git_sync/main/uninstall.sh | bas
 - Accesss Token with the following permissions:
     - write:organization
     - write:repository
-
-## Usage
-
-- Ensure dependencies: Verify that required commands like git and curl are installed.
-- Set up configuration:
-    - If a configuration file doesn't exist, run git_sync init to create one interactively.
-    - You can also manually edit the configuration file.
-- Run the script:
-    - Use the -v flag for verbose output.
-    - Use the -y flag to skip confirmation prompts.
 
 ## Example
 
@@ -98,7 +114,7 @@ TOKEN="xxxxxx" USER="vzool" HTTP_HOST="http://192.168.88.248:3000" SSH_HOST="git
 
 **Supported Git servers**: Currently supports Gitea only.
 
-**Plugins**: Explore available plugins in the plugins directory.
+**Plugins**: Explore available plugins in the root directory, they are end up with `_plugin.sh` suffix.
 
 **Contributing**: Feel free to contribute to the project!
 
