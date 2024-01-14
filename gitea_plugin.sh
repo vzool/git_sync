@@ -38,3 +38,13 @@ function gitea_organization_create_repository(){
                 --data '{"name":"'$repository'", "private":true, "auto_init": false}' \
                 $HTTP_HOST/api/v1/orgs/$domain/repos?access_token=$TOKEN)
 }
+function gitea_user_create_repository(){
+  local domain="$1"
+  local repository="$2"
+  echo $(curl   --write-out '%{http_code}' --silent --output /dev/null \
+                -X 'POST' \
+                -H 'accept: application/json' \
+                -H 'Content-Type: application/json' \
+                --data '{"name":"'$repository'", "private":true, "auto_init": false}' \
+                $HTTP_HOST/api/v1/user/repos?access_token=$TOKEN)
+}

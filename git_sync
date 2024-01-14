@@ -202,6 +202,15 @@ then
   done
   echo "TARGET=\"${TARGET}\"" >> $DEFAULT_CONFIG
 
+  # MODE #
+
+  MODE=$($DIALOG --title "git_sync $ACTION - Target Namespacing Mode" --menu "Please choose the mode to which you want to transfer all your repositories into:" 15 60 6 $(for mode in "user" "organization"; do echo "$mode" "${mode}_mode"; done) 3>&1 1>&2 2>&3)
+  while [[ -z "$MODE" ]];
+  do
+    MODE=$($DIALOG --title "git_sync $ACTION - Target Namespacing Mode" --menu "Please choose the mode to which you want to transfer all your repositories into:" 15 60 6 $(for mode in "user" "organization"; do echo "$mode" "${mode}_mode"; done) 3>&1 1>&2 2>&3)
+  done
+  echo "MODE=\"${MODE}\"" >> $DEFAULT_CONFIG
+
   # EDITOR #
 
   EDITOR=$($DIALOG --title "git_sync $ACTION - Editor" --menu "Which editor would you prefer to use from the available options on your system?" 15 60 6 $(for editor in "${AVAILABLE_EDITORS[@]}"; do echo "$editor" "$editor"; done) 3>&1 1>&2 2>&3)
@@ -211,13 +220,12 @@ then
   done
   echo "EDITOR=\"${EDITOR}\"" >> $DEFAULT_CONFIG
 
-
   # TOKEN #
 
-  TOKEN=$($DIALOG --title "git_sync $ACTION - Access token" --inputbox "Provide access token for your Account.\n\n[Required Permissions]\n- write:organization\n- write:repository" 12 78 $OLD_TOKEN 3>&1 1>&2 2>&3)
+  TOKEN=$($DIALOG --title "git_sync $ACTION - Access token" --inputbox "Provide access token for your Account.\n\n[Required Permissions]\n- write:organization\n- write:repository\n- write:user" 12 78 $OLD_TOKEN 3>&1 1>&2 2>&3)
   while [[ -z "$TOKEN" ]];
   do
-    TOKEN=$($DIALOG --title "git_sync $ACTION - Access token" --inputbox "Provide access token for your Account.\n\n[Required Permissions]\n- write:organization\n- write:repository" 12 78 $OLD_TOKEN 3>&1 1>&2 2>&3)
+    TOKEN=$($DIALOG --title "git_sync $ACTION - Access token" --inputbox "Provide access token for your Account.\n\n[Required Permissions]\n- write:organization\n- write:repository\n- write:user" 12 78 $OLD_TOKEN 3>&1 1>&2 2>&3)
   done
   echo "TOKEN=\"${TOKEN}\"" >> $DEFAULT_CONFIG
 
@@ -291,6 +299,7 @@ source $ENV 2> /dev/null # load the environment variables from selected config f
 # if optional variables not passed, set to default values
 [ -z "$ENV" ] && ENV="$DEFAULT_CONFIG" && source $ENV 2> /dev/null # set the environment
 [ -z "$TARGET" ] && TARGET="gitea" # set the target server
+[ -z "$MODE" ] && MODE="user" # set the mode
 [ -z "$EDITOR" ] && EDITOR="nano" # set the editor
 [ -z "$TOKEN" ] && echo "[ERROR] TOKEN not found, add it to config file!" && exit 1 # set the list of repositories to sync
 [ -z "$GIT_USER" ] && echo "[ERROR] GIT_USER not found, add it to config file!" && exit 1 # set the list of repositories to sync
@@ -323,6 +332,7 @@ then
   echo "===================================================="
   echo "ENV: $ENV"
   echo "TARGET: $TARGET"
+  echo "MODE: $MODE"
   echo "EDITOR: $EDITOR"
   echo "TOKEN: $TOKEN"
   echo "GIT_USER: $GIT_USER"
@@ -415,6 +425,8 @@ do
   cd $DOMAIN_NAME
 
   REPOSITORY_NAME=`basename "$repo" | sed 's/\.git$//'`
+  TARGET_DOMAIN_NAME="$DOMAIN_NAME"
+  TARGET_REPOSITORY_NAME="$REPOSITORY_NAME"
   if [ -d "$REPOSITORY_NAME.git" ]
   then
 
@@ -431,43 +443,81 @@ do
     
   fi
 
-  # server api to check if organization exists
+  # check mode
 
-  response=$(${TARGET}_check_organization $DOMAIN_NAME)
-  [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Response: $response"
-
-  # if organization not found, create it
-
-  if [ $response -eq 404 ]
+  if [ "$MODE" == "user" ]
   then
-    [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Organization [$DOMAIN_NAME] on Gitea Server not found, creating it..."
-    response=$(${TARGET}_create_organization $DOMAIN_NAME)
+
+    # User Mode
+
+    TARGET_DOMAIN_NAME="$GIT_USER"
+    TARGET_REPOSITORY_NAME="$REPOSITORY_NAME.$DOMAIN_NAME"
+
+    echo "TARGET_REPOSITORY_NAME: $TARGET_REPOSITORY_NAME"
+
+    # server api to check if repository exists in user
+
+    response=$(${TARGET}_check_repository $GIT_USER $TARGET_REPOSITORY_NAME)
     [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Response: $response"
-    [ $response -ne 201 ] && echo "[ERROR] Creating organization [$DOMAIN_NAME] on Gitea Server failed!" && exit 1
-  else
-    [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Organization [$DOMAIN_NAME] on Gitea Server found, skipping it!"
-  fi
-  
-  # server api to check if repository exists in organization
 
-  response=$(${TARGET}_check_repository $DOMAIN_NAME $REPOSITORY_NAME)
-  [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Response: $response"
+    if [ $response -eq 404 ]
+    then
+      [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Repository [$TARGET_REPOSITORY_NAME] on Gitea Server not found, creating it..."
+      
+      response=$(${TARGET}_user_create_repository $GIT_USER $TARGET_REPOSITORY_NAME)
+      [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Response: $response"
+      [ $response -ne 201 ] && echo "[ERROR] Creating repository [$TARGET_REPOSITORY_NAME] on Gitea Server failed!" && exit 1
 
-  if [ $response -eq 404 ]
-  then
-    [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Repository [$REPOSITORY_NAME] on Gitea Server not found, creating it..."
+    else
+      [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Repository [$TARGET_REPOSITORY_NAME] on Gitea Server found, skipping it!"
+    fi
     
-    response=$(${TARGET}_organization_create_repository $DOMAIN_NAME $REPOSITORY_NAME)
+  elif [ "$MODE" == "organization" ] # Organization Mode
+  then
+    
+    # server api to check if organization exists
+
+    response=$(${TARGET}_check_organization $DOMAIN_NAME)
     [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Response: $response"
-    [ $response -ne 201 ] && echo "[ERROR] Creating repository [$REPOSITORY_NAME] on Gitea Server failed!" && exit 1
+
+    # if organization not found, create it
+
+    if [ $response -eq 404 ]
+    then
+      [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Organization [$DOMAIN_NAME] on Gitea Server not found, creating it..."
+      response=$(${TARGET}_create_organization $DOMAIN_NAME)
+      [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Response: $response"
+      [ $response -ne 201 ] && echo "[ERROR] Creating organization [$DOMAIN_NAME] on Gitea Server failed!" && exit 1
+    else
+      [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Organization [$DOMAIN_NAME] on Gitea Server found, skipping it!"
+    fi
+    
+    # server api to check if repository exists in organization
+
+    response=$(${TARGET}_check_repository $DOMAIN_NAME $TARGET_REPOSITORY_NAME)
+    [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Response: $response"
+
+    if [ $response -eq 404 ]
+    then
+      [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Repository [$TARGET_REPOSITORY_NAME] on Gitea Server not found, creating it..."
+      
+      response=$(${TARGET}_organization_create_repository $DOMAIN_NAME $TARGET_REPOSITORY_NAME)
+      [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Response: $response"
+      [ $response -ne 201 ] && echo "[ERROR] Creating repository [$TARGET_REPOSITORY_NAME] on Gitea Server failed!" && exit 1
+
+    else
+      [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Repository [$TARGET_REPOSITORY_NAME] on Gitea Server found, skipping it!"
+    fi
 
   else
-    [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Repository [$REPOSITORY_NAME] on Gitea Server found, skipping it!"
+    echo "[ERROR] Unknown mode [$MODE]!"
+    exit 1
   fi
+
   cd $REPOSITORY_NAME.git
   export GIT_SSH_COMMAND="ssh -oPort=$SSH_PORT" # set the selected ssh port
-  git push --all $SSH_HOST:$DOMAIN_NAME/$REPOSITORY_NAME.git
-  git push --tags $SSH_HOST:$DOMAIN_NAME/$REPOSITORY_NAME.git
+  git push --all $SSH_HOST:$TARGET_DOMAIN_NAME/$TARGET_REPOSITORY_NAME.git
+  git push --tags $SSH_HOST:$TARGET_DOMAIN_NAME/$TARGET_REPOSITORY_NAME.git
   export GIT_SSH_COMMAND="ssh -oPort=22" # to reset the ssh default port
   cd ../..
 done

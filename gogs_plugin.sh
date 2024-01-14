@@ -35,3 +35,12 @@ function gogs_organization_create_repository(){
                 --data '{"name":"'$repository'", "private":true, "auto_init": false}' \
                 $HTTP_HOST/api/v1/org/$domain/repos?token=$TOKEN)
 }
+function gogs_user_create_repository(){
+  local domain="$1"
+  local repository="$2"
+  echo $(curl   --write-out '%{http_code}' --silent --output /dev/null -X 'POST' \
+                -H 'accept: application/json' \
+                -H 'Content-Type: application/json' \
+                --data '{"name":"'$repository'", "private":true, "auto_init": false}' \
+                $HTTP_HOST/api/v1/user/repos?token=$TOKEN)
+}

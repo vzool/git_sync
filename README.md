@@ -4,9 +4,14 @@
 
 This script automates the process of syncing repositories from one Git server to another. It's designed to be flexible and supports multiple Git servers storage target through plugins.
 
-When to sync `git@github.com:vzool/git_sync.git` for instance, `git_sync` will create a new repository name `git_sync` under a new orgnization name `vzool.github.com`.
+#### Target Namespaces 
 
-So, things will be separated automatically by namespaces. :)
+- **User mode** (Default): When to sync `git@github.com:vzool/git_sync.git` for instance, `git_sync` will create a new repository name `git_sync.vzool.github.com` under current username `vzool`.
+
+- **Organization mode**: When to sync `git@github.com:vzool/git_sync.git` for instance, `git_sync` will create a new repository name `git_sync` under a new orgnization name `vzool.github.com`.
+
+
+So, all things will be separated automatically by namespaces. :)
 
 #### Support Plugins
 
@@ -30,7 +35,7 @@ git_sync uninstall
 
 # OR
 
-curl -s https://raw.githubusercontent.com/vzool/git_sync/main/uninstall.sh | bash -s -- remove
+curl -s https://raw.githubusercontent.com/vzool/git_sync/main/install.sh | bash -s -- remove
 ```
 
 ## Usage
