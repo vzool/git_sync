@@ -39,18 +39,27 @@ else
     cd $DST
     git pull
 fi
-# check if destination directory is added to environment variables, if not, add it
-if [[ ":$PATH:" != *":$LOCAL_BIN:"* ]]
+# create local_bin if not exists
+if [ ! -d $LOCAL_BIN ]
 then
-    echo "[INFO] local_bin not found in PATH, adding it..."
-    [ -f "$HOME/.bashrc" ] echo "export PATH=\"\$PATH:$LOCAL_BIN\"" >> $HOME/.bashrc
-    [ -f "$HOME/.zshrc" ] echo "export PATH=\"\$PATH:$LOCAL_BIN\"" >> $HOME/.zshrc
-    [ -f "$HOME/.profile" ] echo "export PATH=\"\$PATH:$LOCAL_BIN\"" >> $HOME/.profile
-    [ -f "$HOME/.bash_profile" ] echo "export PATH=\"\$PATH:$LOCAL_BIN\"" >> $HOME/.bash_profile
-    [ -f "$HOME/.config/fish/config.fish" ] echo "export PATH=\"\$PATH:$LOCAL_BIN\"" >> $HOME/.config/fish/config.fish
-    [ -f "$HOME/.config/fish/fish.config" ] echo "export PATH=\"\$PATH:$LOCAL_BIN\"" >> $HOME/.config/fish/fish.config
+    echo "[INFO] local_bin not found in home directory, creating it..."
+    mkdir -p $LOCAL_BIN
 else
-    echo "[INFO] local_bin found in PATH, skipping it!"
+    echo "[INFO] local_bin found in home directory, skipping it!"
+fi
+
+# check if destination directory is added to environment variables, if not, add it
+if [[ ":$PATH:" != *"$LOCAL_BIN"* ]]
+then
+    echo "[INFO] local_bin directory not found in PATH, adding it..."
+    [ -f "$HOME/.bashrc" ] && echo "export PATH=\"\$PATH:$LOCAL_BIN\"" >> $HOME/.bashrc
+    [ -f "$HOME/.zshrc" ] && echo "export PATH=\"\$PATH:$LOCAL_BIN\"" >> $HOME/.zshrc
+    [ -f "$HOME/.profile" ] && echo "export PATH=\"\$PATH:$LOCAL_BIN\"" >> $HOME/.profile
+    [ -f "$HOME/.bash_profile" ] && echo "export PATH=\"\$PATH:$LOCAL_BIN\"" >> $HOME/.bash_profile && $HOME/.bash_profile
+    [ -f "$HOME/.config/fish/config.fish" ] && echo "export PATH=\"\$PATH:$LOCAL_BIN\"" >> $HOME/.config/fish/config.fish
+    [ -f "$HOME/.config/fish/fish.config" ] && echo "export PATH=\"\$PATH:$LOCAL_BIN\"" >> $HOME/.config/fish/fish.config
+else
+    echo "[INFO] local_bin directory found in PATH, skipping it!"
 fi
 # create symbolic link to git_sync if not exists
 if [ ! -L $LOCAL_BIN/git_sync ]
