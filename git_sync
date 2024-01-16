@@ -8,7 +8,7 @@
 
 # Check dependencies by loop through all required commands and check if they are installed
 
-for cmd in curl git sed
+for cmd in curl git sed jq
 do
   if ! command -v $cmd &> /dev/null
   then
@@ -222,10 +222,12 @@ then
 
   # TOKEN #
 
-  TOKEN=$($DIALOG --title "git_sync $ACTION - Access token" --inputbox "Provide access token for your Account.\n\n[Required Permissions]\n- write:organization\n- write:repository\n- write:user" 12 78 $OLD_TOKEN 3>&1 1>&2 2>&3)
+  permissions=$(${TARGET}_required_permissions)
+
+  TOKEN=$($DIALOG --title "git_sync $ACTION - Access token" --inputbox "Provide access token for your Account.\n\n- Required Permissions: [$permissions]\n " 12 78 $OLD_TOKEN 3>&1 1>&2 2>&3)
   while [[ -z "$TOKEN" ]];
   do
-    TOKEN=$($DIALOG --title "git_sync $ACTION - Access token" --inputbox "Provide access token for your Account.\n\n[Required Permissions]\n- write:organization\n- write:repository\n- write:user" 12 78 $OLD_TOKEN 3>&1 1>&2 2>&3)
+    TOKEN=$($DIALOG --title "git_sync $ACTION - Access token" --inputbox "Provide access token for your Account.\n\n- Required Permissions: [$permissions]\n " 12 78 $OLD_TOKEN 3>&1 1>&2 2>&3)
   done
   echo "TOKEN=\"${TOKEN}\"" >> $DEFAULT_CONFIG
 
@@ -240,10 +242,10 @@ then
 
   # HTTP_HOST #
   
-  HTTP_HOST=$($DIALOG --title "git_sync $ACTION - Gitea HTTP HOST" --inputbox "Provide IP or host for your Gitea HTTP Server." 12 78 $OLD_HTTP_HOST 3>&1 1>&2 2>&3)
+  HTTP_HOST=$($DIALOG --title "git_sync $ACTION - Gitea HTTP HOST" --inputbox "Provide IP or host for your Gitea HTTP Server e.g.(git@example.com)." 12 78 $OLD_HTTP_HOST 3>&1 1>&2 2>&3)
   while [[ -z "$HTTP_HOST" ]];
   do
-    HTTP_HOST=$($DIALOG --title "git_sync $ACTION - Gitea HTTP HOST" --inputbox "Provide IP or host for your Gitea HTTP Server." 12 78 $OLD_HTTP_HOST 3>&1 1>&2 2>&3)
+    HTTP_HOST=$($DIALOG --title "git_sync $ACTION - Gitea HTTP HOST" --inputbox "Provide IP or host for your Gitea HTTP Server e.g.(git@example.com)." 12 78 $OLD_HTTP_HOST 3>&1 1>&2 2>&3)
   done
   echo "HTTP_HOST=\"${HTTP_HOST}\"" >> $DEFAULT_CONFIG
 
@@ -334,7 +336,9 @@ then
   echo "TARGET: $TARGET"
   echo "MODE: $MODE"
   echo "EDITOR: $EDITOR"
-  echo "TOKEN: $TOKEN"
+  a="$TOKEN"; \
+  b="${a:3:$((${#a}-6))}"; \
+  echo "TOKEN: ${a:0:3}${b//?/*}${a:(-3)} (hidden)"
   echo "GIT_USER: $GIT_USER"
   echo "HTTP_HOST: $HTTP_HOST"
   echo "SSH_HOST: $SSH_HOST"

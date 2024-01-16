@@ -8,7 +8,7 @@ This script automates the process of syncing repositories from one Git server to
 
 - **User mode** (Default): When to sync `git@github.com:vzool/git_sync.git` for instance, `git_sync` will create a new repository name `git_sync.vzool.github.com` under current username `vzool`.
 
-- **Organization mode**: When to sync `git@github.com:vzool/git_sync.git` for instance, `git_sync` will create a new repository name `git_sync` under a new orgnization name `vzool.github.com`.
+- **Organization mode**: When to sync `git@github.com:vzool/git_sync.git` for instance, `git_sync` will create a new repository name `git_sync` under a new organization name `vzool.github.com`.
 
 
 So, all things will be separated automatically by namespaces. :)
@@ -17,10 +17,10 @@ So, all things will be separated automatically by namespaces. :)
 
 - [x] [Gitea](https://about.gitea.com/).
 - [x] [Gogs](https://gogs.io/).
+- [x] [GitLab](https://about.gitlab.com/). [organization: WIP]
 - [ ] [OneDev](https://onedev.io/).
 - [ ] [Github](https://github.com/).
 - [ ] [BitBucket](https://bitbucket.org/).
-- [ ] [GitLab](https://about.gitlab.com/).
 
 ## Installation / Update
 
@@ -90,21 +90,21 @@ git_sync -y
 To sync repositories listed in repos.txt to a Gitea server, run:
 
 ```bash
-./git_sync init # Create .git_sync directory at home directory
-./git_sync config # Show loaded config
-./git_sync -y # Run without confirmation
+$~> git_sync init # Create .git_sync directory at home directory
+$~> git_sync config # Show loaded config
+$~> git_sync -y # Run without confirmation
 
 # OR
 
-ENV="/path/to/.env" ./git_sync
+$~> ENV="/path/to/.env" git_sync
 
 # OR
 
-TOKEN="xxxxxx" USER="vzool" HTTP_HOST="http://192.168.88.248:3000" SSH_HOST="git@192.168.88.248" LIST="/path/to/git_sync_repo.txt" ./git_sync
+$~> TOKEN="xxxxxx" USER="vzool" HTTP_HOST="http://192.168.88.248:3000" SSH_HOST="git@192.168.88.248" LIST="/path/to/git_sync_repo.txt" git_sync
 
 # OR
 
-TOKEN="xxxxxx" USER="vzool" HTTP_HOST="http://192.168.88.248:3000" SSH_HOST="git@192.168.88.248" SSH_PORT="22" LIST="git_sync_repo.txt" DIR="repo/" ./git_sync
+$~> TOKEN="xxxxxx" USER="vzool" HTTP_HOST="http://192.168.88.248:3000" SSH_HOST="git@192.168.88.248" SSH_PORT="22" LIST="git_sync_repo.txt" DIR="repo/" git_sync
 ```
 
 ## Anatomy
@@ -112,6 +112,21 @@ TOKEN="xxxxxx" USER="vzool" HTTP_HOST="http://192.168.88.248:3000" SSH_HOST="git
 ![00-local-file-storage](images/00-local-file-storage.png)
 ![01-configuration-file](images/01-configuration-file.png)
 ![02-repositories-list.png](images/02-repositories-list.png)
+
+# Plugins Development
+
+Before you go any further replace `xxx` prefix everywhere with your provider git server protocol, e.g. `gitrat`.
+- Create a `xxx_plugins.sh` file in the repository's root.
+- Write the following functions inside `xxx_plugins.sh`:
+    - xxx_plugin_version
+    - xxx_required_permissions
+    - xxx_check_repository
+    - xxx_user_create_repository
+    - xxx_check_organization
+    - xxx_create_organization
+    - xxx_organization_create_repository
+- Implement those functions.
+- Test your implementation.
 
 ## Further Information
 

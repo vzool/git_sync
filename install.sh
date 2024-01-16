@@ -7,7 +7,7 @@
 # License: MIT
 
 # Check for dependencies and exit if not found
-for cmd in git
+for cmd in curl git sed jq
 do
   if ! command -v $cmd &> /dev/null
   then
