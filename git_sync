@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # git_sync - Sync many repositories from any Git Server to another Git Server
 # Author: Abdelaziz Elrashed (@vzool)
-# Version: 0.0.1-dev
+# Version: 0.0.2-dev
 # Date: 2024-01-08
 # URL: https://github.com/vzool/git_sync
 # License: MIT
 
 # Check dependencies by loop through all required commands and check if they are installed
 
-for cmd in curl git sed
+for cmd in curl git sed jq
 do
   if ! command -v $cmd &> /dev/null
   then
@@ -54,14 +54,14 @@ DEFAULT_LIST="$DEFAULT_LOCATION/list" # default repositories list file path
 DEFAULT_REPO="$DEFAULT_LOCATION/repo" # default repositories directory path
 
 if command -v dialog >/dev/null 2>&1; then
-    # dialog is available (likely not macOS)
-    DIALOG="dialog"
+  # dialog is available (likely not macOS)
+  DIALOG="dialog"
 elif command -v whiptail &> /dev/null; then
-    # whiptail is likely available (fallback for macOS)
-    DIALOG="whiptail"
+  # whiptail is likely available (fallback for macOS)
+  DIALOG="whiptail"
 else
-    echo "[ERROR] Neither dialog nor whiptail found. Please install one of them."
-    exit 1
+  echo "[ERROR] Neither dialog nor whiptail found. Please install one of them."
+  exit 1
 fi
 
 if [[ "$1" == "-h" || "$1" == "-help" || "$1" == "help" ]]
@@ -86,7 +86,7 @@ fi
 if [ "$1" == "version" ]
 then
   echo "============================================================================="
-  echo "git_sync version 0.0.1-dev"
+  echo "git_sync version 0.0.2-dev"
   echo "-----------------------------------------------------------------------------"
   echo "Created by: Abdelaziz Elrashed (c) 2024"
   echo "============================================================================="
@@ -222,10 +222,12 @@ then
 
   # TOKEN #
 
-  TOKEN=$($DIALOG --title "git_sync $ACTION - Access token" --inputbox "Provide access token for your Account.\n\n[Required Permissions]\n- write:organization\n- write:repository\n- write:user" 12 78 $OLD_TOKEN 3>&1 1>&2 2>&3)
+  permissions=$(${TARGET}_required_permissions)
+
+  TOKEN=$($DIALOG --title "git_sync $ACTION - Access token" --inputbox "Provide access token for your Account.\n\n- Required Permissions: [$permissions]\n " 12 78 $OLD_TOKEN 3>&1 1>&2 2>&3)
   while [[ -z "$TOKEN" ]];
   do
-    TOKEN=$($DIALOG --title "git_sync $ACTION - Access token" --inputbox "Provide access token for your Account.\n\n[Required Permissions]\n- write:organization\n- write:repository\n- write:user" 12 78 $OLD_TOKEN 3>&1 1>&2 2>&3)
+    TOKEN=$($DIALOG --title "git_sync $ACTION - Access token" --inputbox "Provide access token for your Account.\n\n- Required Permissions: [$permissions]\n " 12 78 $OLD_TOKEN 3>&1 1>&2 2>&3)
   done
   echo "TOKEN=\"${TOKEN}\"" >> $DEFAULT_CONFIG
 
@@ -240,10 +242,10 @@ then
 
   # HTTP_HOST #
   
-  HTTP_HOST=$($DIALOG --title "git_sync $ACTION - Gitea HTTP HOST" --inputbox "Provide IP or host for your Gitea HTTP Server." 12 78 $OLD_HTTP_HOST 3>&1 1>&2 2>&3)
+  HTTP_HOST=$($DIALOG --title "git_sync $ACTION - Gitea HTTP HOST" --inputbox "Provide IP or host for your Gitea HTTP Server e.g.(git@example.com)." 12 78 $OLD_HTTP_HOST 3>&1 1>&2 2>&3)
   while [[ -z "$HTTP_HOST" ]];
   do
-    HTTP_HOST=$($DIALOG --title "git_sync $ACTION - Gitea HTTP HOST" --inputbox "Provide IP or host for your Gitea HTTP Server." 12 78 $OLD_HTTP_HOST 3>&1 1>&2 2>&3)
+    HTTP_HOST=$($DIALOG --title "git_sync $ACTION - Gitea HTTP HOST" --inputbox "Provide IP or host for your Gitea HTTP Server e.g.(git@example.com)." 12 78 $OLD_HTTP_HOST 3>&1 1>&2 2>&3)
   done
   echo "HTTP_HOST=\"${HTTP_HOST}\"" >> $DEFAULT_CONFIG
 
@@ -334,7 +336,9 @@ then
   echo "TARGET: $TARGET"
   echo "MODE: $MODE"
   echo "EDITOR: $EDITOR"
-  echo "TOKEN: $TOKEN"
+  a="$TOKEN"; \
+  b="${a:3:$((${#a}-6))}"; \
+  echo "TOKEN: ${a:0:3}${b//?/*}${a:(-3)} (hidden)"
   echo "GIT_USER: $GIT_USER"
   echo "HTTP_HOST: $HTTP_HOST"
   echo "SSH_HOST: $SSH_HOST"

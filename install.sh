@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # install.sh - installation and update script for git_sync
 # Author: Abdelaziz Elrashed (@vzool)
-# Version: 0.0.1-dev
+# Version: 0.0.2-dev
 # Date: 2024-01-12
 # URL: https://github.com/vzool/git_sync
 # License: MIT
 
 # Check for dependencies and exit if not found
-for cmd in git
+for cmd in curl git sed jq
 do
   if ! command -v $cmd &> /dev/null
   then
@@ -24,14 +24,24 @@ DST="$HOME/.local/git_sync"
 if [ "$1" == "remove" ]
 then
     echo "[INFO] removing git_sync..."
+    if [ ! -d $DST ]
+    then
+        echo "[ERROR] git_sync not found, already removed?"
+    fi
     rm -rf $DST
+    if [ ! -L $LOCAL_BIN/git_sync ]
+    then
+        echo "[ERROR] git_sync symbolic link not found, already removed?"
+    fi
     rm -rf $LOCAL_BIN/git_sync
+    echo "[INFO] git_sync removed successfully!"
     exit 0
 fi
 
 # check if destination directory exists, if not, clone the repo
 if [ ! -d $DST ]
 then
+    FRESH_INSTALL=true
     echo "[INFO] git_sync not found, cloning it..."
     git clone git@github.com:vzool/git_sync.git $DST
 else
@@ -39,6 +49,7 @@ else
     cd $DST
     git pull
 fi
+
 # create local_bin if not exists
 if [ ! -d $LOCAL_BIN ]
 then
@@ -61,6 +72,7 @@ then
 else
     echo "[INFO] local_bin directory found in PATH, skipping it!"
 fi
+
 # create symbolic link to git_sync if not exists
 if [ ! -L $LOCAL_BIN/git_sync ]
 then
@@ -69,6 +81,7 @@ then
 else
     echo "[INFO] git_sync symbolic link found, skipping it!"
 fi
+
 # check git_sync has execution permission, if not, add it
 if [ ! -x $DST ]
 then
@@ -76,4 +89,10 @@ then
     chmod +x $DST
 else
     echo "[INFO] git_sync is already an executable file, skipping it!"
+fi
+
+# if FRESH_INSTALL is true, then print the installation message
+if [ "$FRESH_INSTALL" = true ]
+then
+    echo "[INFO] git_sync installed successfully, please open a new terminal to use it!"
 fi
