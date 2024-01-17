@@ -18,9 +18,10 @@ So, all things will be separated automatically by namespaces. :)
 - [x] [Gitea](https://about.gitea.com/).
 - [x] [Gogs](https://gogs.io/).
 - [x] [GitLab](https://about.gitlab.com/).
-- [ ] [OneDev](https://onedev.io/).
+- [x] [OneDev](https://onedev.io/).
 - [ ] [Github](https://github.com/).
 - [ ] [BitBucket](https://bitbucket.org/).
+- [ ] [CodeBase](https://www.codebasehq.com/).
 
 ## Installation / Update
 
@@ -120,6 +121,9 @@ Before you go any further replace `xxx` prefix everywhere with your provider git
 - Write the following functions inside `xxx_plugins.sh`:
     - xxx_plugin_version
     - xxx_required_permissions
+    - xxx_user_can_create_repo_flag
+    - xxx_remote_origin (optional) if this function exists the script will change the default execution path
+    - xxx_custom_push_updates (optional, but required with xxx_remote_origin function)
     - xxx_check_repository
     - xxx_user_create_repository
     - xxx_check_organization

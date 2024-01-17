@@ -1,13 +1,14 @@
 ################################################
 # Gogs Server API Plugin for git_sync
 # Author: Abdelaziz Elrashed (@vzool)
-# Version: 0.2
+# Version: 0.3
 # Date: 2024-01-08
 # License: MIT
 # REF: https://github.com/gogs/go-gogs-client
 ################################################
-function gogs_plugin_version(){ echo "vzool_0.2"; }
+function gogs_plugin_version(){ echo "vzool_0.3"; }
 function gogs_required_permissions(){ echo "non-specifiable"; }
+function gogs_user_can_create_repo_flag(){ echo "true"; }
 function gogs_check_repository(){
   local domain="$1"
   local repository="$2"

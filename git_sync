@@ -459,23 +459,30 @@ do
 
     echo "TARGET_REPOSITORY_NAME: $TARGET_REPOSITORY_NAME"
 
-    # server api to check if repository exists in user
+    # check if user can create repositories with selected plugin
 
-    response=$(${TARGET}_check_repository $GIT_USER $TARGET_REPOSITORY_NAME)
-    [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Response: $response"
-
-    if [ $response -eq 404 ]
+    if [ "$(${TARGET}_user_can_create_repo_flag)" == "true" ]
     then
-      [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Repository [$TARGET_REPOSITORY_NAME] on Gitea Server not found, creating it..."
-      
-      response=$(${TARGET}_user_create_repository $GIT_USER $TARGET_REPOSITORY_NAME)
+      [[ "$1" == "-v" || "$2" == "-v" ]] &&  echo "User [$GIT_USER] can create repositories with selected plugin [$TARGET], checking if repository [$TARGET_REPOSITORY_NAME] exists..."
+      # server api to check if repository exists in user
+      response=$(${TARGET}_check_repository $GIT_USER $TARGET_REPOSITORY_NAME)
       [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Response: $response"
-      [ $response -ne 201 ] && echo "[ERROR] Creating repository [$TARGET_REPOSITORY_NAME] on Gitea Server failed!" && exit 1
 
+      if [ $response -eq 404 ]
+      then
+        [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Repository [$TARGET_REPOSITORY_NAME] on Gitea Server not found, creating it..."
+        
+        response=$(${TARGET}_user_create_repository $GIT_USER $TARGET_REPOSITORY_NAME)
+        [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Response: $response"
+        [ $response -ne 201 ] && echo "[ERROR] Creating repository [$TARGET_REPOSITORY_NAME] on Gitea Server failed!" && exit 1
+
+      else
+        [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Repository [$TARGET_REPOSITORY_NAME] on Gitea Server found, skipping it!"
+      fi
     else
-      [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Repository [$TARGET_REPOSITORY_NAME] on Gitea Server found, skipping it!"
+      [[ "$1" == "-v" || "$2" == "-v" ]] &&  echo "User [$GIT_USER] can not create repositories with selected plugin [$TARGET], ignoring create repository!"
     fi
-    
+
   elif [ "$MODE" == "organization" ] # Organization Mode
   then
     
@@ -519,9 +526,23 @@ do
   fi
 
   cd $REPOSITORY_NAME.git
-  export GIT_SSH_COMMAND="ssh -oPort=$SSH_PORT" # set the selected ssh port
-  git push --all $SSH_HOST:$TARGET_DOMAIN_NAME/$TARGET_REPOSITORY_NAME.git
-  git push --tags $SSH_HOST:$TARGET_DOMAIN_NAME/$TARGET_REPOSITORY_NAME.git
-  export GIT_SSH_COMMAND="ssh -oPort=22" # to reset the ssh default port
+  # check if [plugin]_remote_origin is set, used otherwise use default execution path
+  if [ ! -z "$(type -t ${TARGET}_remote_origin)" ] && [ "$(type -t ${TARGET}_remote_origin)" = function ]
+  then
+    [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Unusual remote origin found[$(${TARGET}_remote_origin)], skipping default path!"
+    # if [plugin]_custom_push_updates is set then use it, otherwise show an error message with the plugin implementation is incomplete
+    if [ ! -z "$(type -t ${TARGET}_custom_push_updates)" ] && [ "$(type -t ${TARGET}_custom_push_updates)" = function ]
+    then
+      ${TARGET}_custom_push_updates
+    else
+      echo "[ERROR] [${TARGET}_custom_push_updates] function not found, implemention is incomplete within ($TARGET) plugin!"
+      exit 1
+    fi
+  else  
+    export GIT_SSH_COMMAND="ssh -oPort=$SSH_PORT" # set the selected ssh port
+    git push --all $SSH_HOST:$TARGET_DOMAIN_NAME/$TARGET_REPOSITORY_NAME.git
+    git push --tags $SSH_HOST:$TARGET_DOMAIN_NAME/$TARGET_REPOSITORY_NAME.git
+    export GIT_SSH_COMMAND="ssh -oPort=22" # to reset the ssh default port
+  fi
   cd ../..
 done

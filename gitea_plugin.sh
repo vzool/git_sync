@@ -1,13 +1,14 @@
 ################################################
 # Gitea Server API Plugin for git_sync
 # Author: Abdelaziz Elrashed (@vzool)
-# Version: 0.2
+# Version: 0.3
 # Date: 2024-01-08
 # License: MIT
 # REF: https://docs.gitea.com/api/1.20/
 ################################################
-function gitea_plugin_version(){ echo "vzool_0.2"; }
+function gitea_plugin_version(){ echo "vzool_0.3"; }
 function gitea_required_permissions(){ echo "write:organization, write:repository, write:user"; }
+function gitea_user_can_create_repo_flag(){ echo "true"; }
 function gitea_check_repository(){
   local domain="$1"
   local repository="$2"

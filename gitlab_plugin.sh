@@ -1,13 +1,14 @@
 ################################################
 # GitLab Server API Plugin for git_sync
 # Author: Abdelaziz Elrashed (@vzool)
-# Version: 0.1
+# Version: 0.2
 # Date: 2024-01-16
 # License: MIT
 # REF: https://docs.gitlab.com/16.7/ee/api/api_resources.html
 ################################################
-function gitlab_plugin_version(){ echo "vzool_0.1"; }
+function gitlab_plugin_version(){ echo "vzool_0.2"; }
 function gitlab_required_permissions(){ echo "api"; }
+function gitlab_user_can_create_repo_flag(){ echo "true"; }
 function gitlab_check_repository(){
   local domain="$1"
   local repository="$2"
