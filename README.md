@@ -13,12 +13,13 @@ This script automates the process of syncing repositories from one Git server to
 
 So, all things will be separated automatically by namespaces. :)
 
-#### Supported Plugins
+#### Supported Git Servers
 
-- [x] [Gitea](https://about.gitea.com/).
-- [x] [Gogs](https://gogs.io/).
-- [x] [GitLab](https://about.gitlab.com/).
-- [x] [OneDev](https://onedev.io/).
+- [x] [Gitea](https://about.gitea.com/): tested on Gitea Server v1.21.3.
+- [x] [Gogs](https://gogs.io/): tested on Gogs Server v0.14.0+dev.
+- [x] [GitLab Community](https://about.gitlab.com/community/): tested on GitLab Community Server v16.7.3.
+- [x] [GitLab PaaS](https://about.gitlab.com/). (**Note**: Create Organization not allowed)
+- [x] [OneDev](https://onedev.io/): tested on OneDev Server v9.5.1.
 - [ ] [Github](https://github.com/).
 - [ ] [BitBucket](https://bitbucket.org/).
 - [ ] [CodeBase](https://www.codebasehq.com/).
