@@ -43,7 +43,7 @@ if [ ! -d $DST ]
 then
     FRESH_INSTALL=true
     echo "[INFO] git_sync not found, cloning it..."
-    git clone git@github.com:vzool/git_sync.git $DST
+    git clone https://github.com/vzool/git_sync.git $DST
 else
     echo "[INFO] git_sync found, updating it..."
     cd $DST
