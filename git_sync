@@ -1,10 +1,20 @@
 #!/usr/bin/env bash
 # git_sync - Sync many repositories from any Git Server to another Git Server
 # Author: Abdelaziz Elrashed (@vzool)
-# Version: 0.0.2-dev
+# Version: 0.0.21-dev
 # Date: 2024-01-08
 # URL: https://github.com/vzool/git_sync
 # License: MIT
+
+# ~/.git_sync/config (file)
+# ~/.git_sync/list (file)
+# ~/.git_sync/repo (directory)
+
+DEFAULT_INSTALL_LOCATION="$HOME/.local/git_sync"
+DEFAULT_LOCATION="$HOME/.git_sync" # default location for all files
+DEFAULT_CONFIG="$DEFAULT_LOCATION/config" # default config file path
+DEFAULT_LIST="$DEFAULT_LOCATION/list" # default repositories list file path
+DEFAULT_REPO="$DEFAULT_LOCATION/repo" # default repositories directory path
 
 # Check dependencies by loop through all required commands and check if they are installed
 
@@ -18,6 +28,7 @@ do
 done
 
 plugins=()
+cd "$DEFAULT_INSTALL_LOCATION"
 for plugin in *_plugin.sh; do
   [[ "$1" == "-v" || "$2" == "-v" ]] && echo "Loading $plugin..."
   . "$plugin" #|| echo "[ERROR] Failed to load $plugin!" && continue
@@ -43,15 +54,6 @@ if [ "$1" == "plugins" ]
 then
   exit 0
 fi
-
-# ~/.git_sync/config (file)
-# ~/.git_sync/list (file)
-# ~/.git_sync/repo (directory)
-
-DEFAULT_LOCATION="$HOME/.git_sync" # default location for all files
-DEFAULT_CONFIG="$DEFAULT_LOCATION/config" # default config file path
-DEFAULT_LIST="$DEFAULT_LOCATION/list" # default repositories list file path
-DEFAULT_REPO="$DEFAULT_LOCATION/repo" # default repositories directory path
 
 if command -v dialog >/dev/null 2>&1; then
   # dialog is available (likely not macOS)
@@ -86,7 +88,7 @@ fi
 if [ "$1" == "version" ]
 then
   echo "============================================================================="
-  echo "git_sync version 0.0.2-dev"
+  echo "git_sync version 0.0.21-dev"
   echo "-----------------------------------------------------------------------------"
   echo "Created by: Abdelaziz Elrashed (c) 2024"
   echo "============================================================================="

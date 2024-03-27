@@ -1,4 +1,4 @@
-# [WIP] git_sync: Easily sync repositories between Git servers
+# [DRAFT] git_sync: Easily sync repositories between Git servers
 
 ## Overview
 
