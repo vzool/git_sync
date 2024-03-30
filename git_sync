@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # git_sync - Sync many repositories from any Git Server to another Git Server
 # Author: Abdelaziz Elrashed (@vzool)
-# Version: 0.0.23-dev
+# Version: 0.0.25-dev
 # Date: 2024-01-08
 # URL: https://github.com/vzool/git_sync
 # License: MIT
@@ -88,7 +88,7 @@ fi
 if [ "$1" == "version" ]
 then
   echo "============================================================================="
-  echo "git_sync version 0.0.23-dev"
+  echo "git_sync version 0.0.25-dev"
   echo "-----------------------------------------------------------------------------"
   echo "Created by: Abdelaziz Elrashed (c) 2024"
   echo "============================================================================="
