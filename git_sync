@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # git_sync - Sync many repositories from any Git Server to another Git Server
 # Author: Abdelaziz Elrashed (@vzool)
-# Version: 0.0.21-dev
+# Version: 0.0.22-dev
 # Date: 2024-01-08
 # URL: https://github.com/vzool/git_sync
 # License: MIT
@@ -88,7 +88,7 @@ fi
 if [ "$1" == "version" ]
 then
   echo "============================================================================="
-  echo "git_sync version 0.0.21-dev"
+  echo "git_sync version 0.0.22-dev"
   echo "-----------------------------------------------------------------------------"
   echo "Created by: Abdelaziz Elrashed (c) 2024"
   echo "============================================================================="
@@ -526,8 +526,17 @@ do
     echo "[ERROR] Unknown mode [$MODE]!"
     exit 1
   fi
-
   cd $REPOSITORY_NAME.git
+  # if failed to enter the directory
+  if [ $? -ne 0 ]
+  then
+    echo "[ERROR] Failed to enter the directory [$REPOSITORY_NAME.git]!"
+    # print current working directory
+    echo "[DEBUG] pwd: $(pwd)"
+    # list all repositories in the current working directory
+    echo "[DEBUG] ls: $(ls)"
+    exit 1
+  fi
   # check if [plugin]_remote_origin is set, used otherwise use default execution path
   if [ ! -z "$(type -t ${TARGET}_remote_origin)" ] && [ "$(type -t ${TARGET}_remote_origin)" = function ]
   then

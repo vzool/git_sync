@@ -93,7 +93,7 @@ To sync repositories listed in repos.txt to a Gitea server, run:
 
 ```bash
 $~> git_sync init # Create .git_sync directory at home directory
-$~> git_sync config # Show loaded config
+$~> git_sync config # Show default config in editor
 $~> git_sync -y # Run without confirmation
 
 # OR
