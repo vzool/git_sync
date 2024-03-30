@@ -47,6 +47,8 @@ then
 else
     echo "[INFO] git_sync found, updating it..."
     cd $DST
+    git checkout -f
+    git rebase origin/main
     git pull
 fi
 
