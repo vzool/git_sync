@@ -48,8 +48,10 @@ else
     echo "[INFO] git_sync found, updating it..."
     cd $DST
     git checkout -f
+    git fetch --all
+    rm -fr ".git/rebase-merge"
     git rebase origin/main
-    git pull
+    git pull origin main
 fi
 
 # create local_bin if not exists
